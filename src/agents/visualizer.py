@@ -232,7 +232,11 @@ def run(output_path: Optional[str] = None) -> str:
     net.save_graph(str(out))
     _inject_legend_and_controls(out, node_map)
 
-    console.print(f"[green]✓ Visualization saved to {out}[/green]")
+    # Keep index.html in sync for GitHub Pages
+    index = out.parent.parent / "index.html"
+    import shutil
+    shutil.copy2(out, index)
+    console.print(f"[green]✓ Visualization saved to {out} (synced to {index})[/green]")
     return str(out)
 
 
