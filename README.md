@@ -1,0 +1,109 @@
+# Epstein Network — Claude Agent Team + Social Network Analysis
+
+A Python project that uses a **Claude multi-agent team** to extract, analyze, and visualize the social network embedded in publicly released Epstein court documents.
+
+## Goals
+
+1. **Learn Claude agent patterns** — Orchestrator + Subagents with `tool_use`
+2. **Apply Social Network Theory** — degree/betweenness/closeness centrality, weak ties, community detection
+3. **Visualize public records** — interactive HTML graph with rich hover tooltips
+
+## Quick Start
+
+```bash
+# 1. Install dependencies
+pip install -r requirements.txt
+
+# 2. Configure API keys
+cp .env.example .env
+# Edit .env and set ANTHROPIC_API_KEY and OPENAI_API_KEY
+
+# 3a. Instant start — load pre-built seed data (no API calls needed)
+python seed_data.py
+python main.py build
+python main.py visualize
+
+# 3b. Full pipeline from real documents (requires both API keys + credits)
+python main.py run-all
+
+# 4. Open the visualization
+open output/network.html
+```
+
+## Pipeline Commands
+
+| Command | Description |
+|---------|-------------|
+| `python main.py fetch` | Fetch documents listed in docs/data-sources.md, extract text |
+| `python main.py fetch --new-only` | Only process documents not yet fetched |
+| `python main.py register-local <path>` | Register a local .txt file as a document |
+| `python main.py extract` | Extract entities + relationships via Claude |
+| `python main.py build` | Build NetworkX graph + compute SNA metrics |
+| `python main.py visualize` | Generate output/network.html |
+| `python main.py run-all` | Full pipeline end-to-end |
+
+## Adding New Documents
+
+Edit `docs/data-sources.md` and add an entry to the `documents:` YAML list:
+
+```yaml
+- id: my-new-doc
+  title: "My Document Title"
+  url: "https://example.com/document.pdf"
+  source: courtlistener
+  date: "2022-01-15"
+  notes: "Why this document is relevant"
+```
+
+Then run `python main.py fetch --new-only` to process only the new document.
+
+You can also drop a `.txt` file directly into `data/text/` and register it:
+```bash
+python main.py register-local data/text/my-document.txt --title "My Document"
+```
+
+## Project Structure
+
+```
+e-network/
+├── docs/
+│   ├── architecture.md   # Agent design + social network theory
+│   ├── agents.md         # How to extend agents
+│   └── data-sources.md   # Document registry (YAML)
+├── src/
+│   ├── agents/           # Subagents + orchestrator
+│   │   ├── fetcher.py    # Downloads PDFs → .txt (Claude Haiku)
+│   │   ├── extractor.py  # Extracts entities/rels from .txt (OpenAI gpt-4o-mini)
+│   │   ├── graph_builder.py  # Builds NetworkX graph + SNA metrics (no LLM)
+│   │   ├── visualizer.py     # Generates PyVis HTML (no LLM)
+│   │   └── orchestrator.py   # Coordinates pipeline via tool_use (Claude Sonnet)
+│   ├── tools/            # PDF, graph, storage utilities
+│   └── models/           # Pydantic data models
+├── data/
+│   ├── text/             # Extracted document text (.txt)
+│   ├── processed/        # graph.json (built by graph_builder)
+│   └── epstein.db        # SQLite database
+├── output/
+│   └── network.html      # Interactive visualization
+├── seed_data.py          # Pre-populate DB from public court records (Claude came up with this based on its knowledge)
+└── main.py               # CLI entry point
+```
+
+## Social Network Theory
+
+The visualization encodes multiple SNA concepts:
+
+| Visual Element | SNA Concept |
+|---------------|-------------|
+| Node size | Degree centrality |
+| Node border thickness | Betweenness centrality (broker/gatekeeper role) |
+| Node color | Community (Louvain algorithm) |
+| Edge solid/dashed | Strong vs. weak tie (Granovetter) |
+| Edge thickness | Co-mention frequency |
+| Hover tooltip | Closeness centrality, role, document context |
+
+See `docs/architecture.md` for a full explanation.
+
+## Data Sources
+
+All documents are publicly available court records. See `docs/data-sources.md` for the full registry with URLs and provenance.
